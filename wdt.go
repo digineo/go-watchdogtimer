@@ -8,7 +8,7 @@ import (
 
 var (
 	// ErrUnsupported is returned if the given operation is not supported.
-	ErrUnsupported = errors.New("disable not supported")
+	ErrUnsupported = errors.New("operation not supported")
 )
 
 type WatchdogTimer interface {
