@@ -11,7 +11,7 @@ var (
 	ErrUnsupported = errors.New("operation not supported")
 )
 
-type WatchdogTimer interface {
+type Timer interface {
 	io.Closer
 
 	Pat() error
@@ -26,6 +26,6 @@ type WatchdogTimer interface {
 }
 
 // Open the named platform specific Watchdog timer.
-func Open(name string) (WatchdogTimer, error) {
-	return openWatchdogTimer(name)
+func Open(name string) (Timer, error) {
+	return open(name)
 }

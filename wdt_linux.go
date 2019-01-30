@@ -29,7 +29,7 @@ type watchdogInfo struct {
 	identity        [32]byte
 }
 
-type linuxWatchdogTimer struct {
+type timer struct {
 	handle *os.File
 
 	info *watchdogInfo
@@ -48,57 +48,57 @@ func getWatchdogInfo(file *os.File) *watchdogInfo {
 	return &info
 }
 
-func (w *linuxWatchdogTimer) hasFeature(value uint32) bool {
-	return w.info != nil && w.info.options&value == value
+func (t *timer) hasFeature(value uint32) bool {
+	return t.info != nil && t.info.options&value == value
 }
 
-func openWatchdogTimer(name string) (*linuxWatchdogTimer, error) {
+func open(name string) (Timer, error) {
 	file, err := os.OpenFile(name, os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
 
-	return &linuxWatchdogTimer{
+	return &timer{
 		handle: file,
 		info:   getWatchdogInfo(file),
 	}, nil
 }
 
-func (w *linuxWatchdogTimer) Close() error {
-	return w.handle.Close()
+func (t *timer) Close() error {
+	return t.handle.Close()
 }
 
-func (w *linuxWatchdogTimer) Pat() (err error) {
-	if w.hasFeature(WDIOF_KEEPALIVEPING) {
+func (t *timer) Pat() (err error) {
+	if t.hasFeature(WDIOF_KEEPALIVEPING) {
 		err = unix.IoctlSetInt(
-			int(w.handle.Fd()), unix.WDIOC_KEEPALIVE, 1)
+			int(t.handle.Fd()), unix.WDIOC_KEEPALIVE, 1)
 	} else {
-		_, err = w.handle.Write([]byte("P"))
+		_, err = t.handle.Write([]byte("P"))
 	}
 	return
 }
 
-func (w *linuxWatchdogTimer) Disable() error {
-	if !w.hasFeature(WDIOF_MAGICCLOSE) {
+func (t *timer) Disable() error {
+	if !t.hasFeature(WDIOF_MAGICCLOSE) {
 		return ErrUnsupported
 	}
 
-	_, err := w.handle.Write([]byte("V"))
+	_, err := t.handle.Write([]byte("V"))
 	return err
 }
 
-func (w *linuxWatchdogTimer) SetTimeout(seconds time.Duration) error {
-	if !w.hasFeature(WDIOF_SETTIMEOUT) {
+func (t *timer) SetTimeout(seconds time.Duration) error {
+	if !t.hasFeature(WDIOF_SETTIMEOUT) {
 		return ErrUnsupported
 	}
 
 	return unix.IoctlSetPointerInt(
-		int(w.handle.Fd()), unix.WDIOC_SETTIMEOUT,
+		int(t.handle.Fd()), unix.WDIOC_SETTIMEOUT,
 		int(seconds/time.Second))
 }
 
-func (w *linuxWatchdogTimer) GetTimeout() (seconds time.Duration, err error) {
-	s, err := unix.IoctlGetInt(int(w.handle.Fd()), unix.WDIOC_GETTIMEOUT)
+func (t *timer) GetTimeout() (seconds time.Duration, err error) {
+	s, err := unix.IoctlGetInt(int(t.handle.Fd()), unix.WDIOC_GETTIMEOUT)
 	if err != nil {
 		return
 	}
@@ -106,8 +106,8 @@ func (w *linuxWatchdogTimer) GetTimeout() (seconds time.Duration, err error) {
 	return time.Duration(s) * time.Second, nil
 }
 
-func (w *linuxWatchdogTimer) GetTimeLeft() (seconds time.Duration, err error) {
-	s, err := unix.IoctlGetInt(int(w.handle.Fd()), unix.WDIOC_GETTIMELEFT)
+func (t *timer) GetTimeLeft() (seconds time.Duration, err error) {
+	s, err := unix.IoctlGetInt(int(t.handle.Fd()), unix.WDIOC_GETTIMELEFT)
 	if err != nil {
 		return
 	}

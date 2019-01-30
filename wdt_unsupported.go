@@ -2,6 +2,6 @@
 
 package watchdogtimer
 
-func openWatchdogTimer(name string) (*linuxWatchdogTimer, error) {
+func openWatchdogTimer(name string) (*timer, error) {
 	return nil, ErrUnsupported
 }
